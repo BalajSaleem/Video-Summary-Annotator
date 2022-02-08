@@ -2,9 +2,9 @@ from logging import exception
 from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QLineEdit, QComboBox, QFileDialog, QStyleFactory, QHBoxLayout, QLabel, QSizePolicy, QSlider, QStyle, QVBoxLayout, QWidget, QStatusBar, QTableWidget, QVBoxLayout, QTableWidgetItem, QHBoxLayout, QSplitter, QGroupBox, QFormLayout, QAction, QGridLayout, QShortcut
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 from PyQt5.QtMultimediaWidgets import QVideoWidget
-from PyQt5 import QtCore, Qt, QtGui
+from PyQt5 import QtCore, Qt
 from PyQt5.QtCore import Qt, QUrl, QDir, QTime, pyqtSlot
-from PyQt5.QtGui import QKeySequence, QStandardItemModel
+from PyQt5.QtGui import QKeySequence, QStandardItemModel, QFont
 import csv
 import sys
 import cv2 as cv
@@ -324,6 +324,10 @@ class Window(QMainWindow):
             self.tableWidget.setItem(self.rowNo, self.colNo, row_widget)
             self.colNo += 1
             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(str(index+1)))
+            if index > 2:
+                font = QFont()
+                font.setBold(True)
+                self.tableWidget.item(self.rowNo, self.colNo).setFont(font)
             self.colNo += 1
             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(self.iLabel.itemText(index).split(' ', 1)[1]))
             self.colNo = 0
@@ -419,6 +423,10 @@ class Window(QMainWindow):
                             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(et))
                             self.colNo += 1
                             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(str(li)))
+                            if int(li) > 3:
+                                font = QFont()
+                                font.setBold(True)
+                                self.tableWidget.item(self.rowNo, self.colNo).setFont(font)
                             self.colNo += 1
                             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(ln))
                             self.rowNo += 1
