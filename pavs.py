@@ -21,9 +21,12 @@ class Window(QMainWindow):
 
         self.title = "Annotator for Videos"
         self.labels = [x for x in range(1,6)]
+        self.label_words = ['One', 'Two', 'Three', 'Four', 'Five' ]
         self.est_counts = [0] * 5
         self.curr_counts = [0] * 5
         self.label_ratios = [(0.25,0.65), (0.20,0.40), (0.10,0.20), (0.05,0.10), (0.01,0.05)]
+        self.prev_val = -1
+        self.edited_row = -1
         # self.top = 100
         # self.left = 100
         # self.width = 300
@@ -59,6 +62,9 @@ class Window(QMainWindow):
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
         self.tableWidget = QTableWidget()
         self.tableWidget.cellClicked.connect(self.checkTableFrame)
+        self.tableWidget.cellDoubleClicked.connect(self.cellDoubleClicked)
+        self.tableWidget.cellChanged.connect(self.cellChanged)
+
 
         self.videoWidget = QVideoWidget()
         self.frameID=0
@@ -240,9 +246,9 @@ class Window(QMainWindow):
         
         feats = QHBoxLayout()
         feats.addWidget(self.nextButton)
-        feats.addWidget(self.delButton)
-        feats.addWidget(self.exportButton)
         feats.addWidget(self.importButton)
+        feats.addWidget(self.exportButton)
+        feats.addWidget(self.delButton)
 
         layout2 = QVBoxLayout()
         layout2.addWidget(self.tableWidget,20)
@@ -353,6 +359,27 @@ class Window(QMainWindow):
     def text_to_time(self, text):
         times = text.split(':')
         return QTime(int(times[0]),int(times[1]),int(times[2]))
+
+    def cellDoubleClicked(self,row, column):
+         if ((row > 0) and (column == 2)):
+            # print("Row %d and Column %d was clicked" % (row, column))
+            item = self.tableWidget.item(row, column)
+            if (item != (None and "")):
+                #try:
+                self.prev_val = int(item.text())
+                self.edited_row = row
+
+    def cellChanged(self,row, column):
+         if ((row > 0) and (column == 2)):
+            # print("Row %d and Column %d was clicked" % (row, column))
+            item = self.tableWidget.item(row, column)
+            if (item != (None and "") and (row == self.edited_row) ):
+                #try:
+                curr_val = int(item.text())
+                if self.prev_val != curr_val:
+                    self.curr_counts[self.prev_val-1] -= 1
+                    self.curr_counts[curr_val-1] +=1
+                    self.updateCurrCounts()
 
     def set_label(self, index):
         if (self.mediaPlayer.state() == QMediaPlayer.PausedState):
