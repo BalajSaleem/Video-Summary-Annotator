@@ -521,7 +521,7 @@ class Window(QMainWindow):
         self.tableWidget.setItem(0, 0, QTableWidgetItem("Start Time"))
         self.tableWidget.setItem(0, 1, QTableWidgetItem("End Time"))
         self.tableWidget.setItem(0, 2, QTableWidgetItem("Label Index"))
-        self.tableWidget.setItem(0, 3, QTableWidgetItem("Labeler Name"))
+        self.tableWidget.setItem(0, 3, QTableWidgetItem("Label Name"))
 
     def checkTableFrame(self, row, column):
         if ((row > 0) and (column < 2)):
