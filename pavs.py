@@ -20,6 +20,10 @@ class Window(QMainWindow):
         super().__init__()
 
         self.title = "Annotator for Videos"
+        self.labels = [x for x in range(1,6)]
+        self.est_counts = [0] * 5
+        self.curr_counts = [0] * 5
+        self.label_ratios = [(0.25,0.65), (0.20,0.40), (0.10,0.20), (0.05,0.10), (0.01,0.05)]
         # self.top = 100
         # self.left = 100
         # self.width = 300
@@ -48,6 +52,8 @@ class Window(QMainWindow):
         self.fps = 24
         self.lastPause = QTime(0,0,0,0)
 
+
+
         self.model = QStandardItemModel()
 
         self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
@@ -70,6 +76,49 @@ class Window(QMainWindow):
         self.lbltxt3 = QLabel('Total')
         self.lbltxt3.setFixedWidth(120)
 
+        self.lbl_name_layout = QHBoxLayout()
+        self.lbl_name_layout.addWidget(QLabel( "Labels:" ))
+        self.lbl_curr_count_layout = QHBoxLayout()
+        self.lbl_curr_count_layout.addWidget(QLabel( "Current:" ))
+        self.lbl_est_count_layout = QHBoxLayout()
+        self.lbl_est_count_layout.addWidget(QLabel( "Estimated:" ))
+
+
+        for lbl in self.labels:
+            wid_lbl = QLabel( str(lbl) + "s" )
+            #wid_lbl.setFixedWidth(40)
+            wid_lbl.setFixedHeight(15)
+            self.lbl_name_layout.addWidget(wid_lbl)
+
+        for lbl in self.curr_counts:
+            wid_lbl = QLabel( str(lbl) )
+            #wid_lbl.setFixedWidth(40)
+            wid_lbl.setFixedHeight(15)
+            self.lbl_curr_count_layout.addWidget(wid_lbl)
+        
+        for lbl in self.est_counts:
+            wid_lbl = QLabel( str(lbl) )
+            #wid_lbl.setFixedWidth(40)
+            wid_lbl.setFixedHeight(15)
+            self.lbl_est_count_layout.addWidget(wid_lbl)
+
+
+
+
+        self.counts_lbl = QLabel('')
+        self.counts_lbl.setFixedWidth(40)
+        
+        self.curr_counts_lbl = QLabel('Curr:')
+        self.curr_counts_lbl.setFixedWidth(40)
+
+        self.estimate_counts = QLabel('Est:')
+        self.estimate_counts.setFixedWidth(40)
+
+        self.v_box_tags = QVBoxLayout()
+        self.v_box_tags.addWidget(self.counts_lbl)
+        self.v_box_tags.addWidget(self.curr_counts_lbl)
+        self.v_box_tags.addWidget(self.estimate_counts)
+        
         self.playButton = QPushButton()
         self.playButton.setEnabled(False)
         self.playButton.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
@@ -128,8 +177,6 @@ class Window(QMainWindow):
         # self.iLabel.addItem("8. Following Instructions")
         self.iLabel.activated[str].connect(self.style_choice)
 
-        # self.iLabel = QLineEdit()
-        # self.iLabel.setPlaceholderText("Label")
 
         self.positionSlider = QSlider(Qt.Horizontal)
         self.positionSlider.setRange(0, 100)
@@ -184,13 +231,13 @@ class Window(QMainWindow):
         plotBox.addLayout(layout, 5)
         # }
 
+   
         # Right Layout {
         inputFields = QHBoxLayout()
-        #inputFields.addWidget(self.startTime)
-        #inputFields.addWidget(self.endTime)
-        inputFields.addWidget(self.iLabel)
-        # inputFields.addWidget(self.ctr)
+        inputFields.setContentsMargins(0, 0, 0, 0)
 
+
+        
         feats = QHBoxLayout()
         feats.addWidget(self.nextButton)
         feats.addWidget(self.delButton)
@@ -198,8 +245,10 @@ class Window(QMainWindow):
         feats.addWidget(self.importButton)
 
         layout2 = QVBoxLayout()
-        layout2.addWidget(self.tableWidget,1)
-        layout2.addLayout(inputFields, 1)
+        layout2.addWidget(self.tableWidget,20)
+        layout2.addLayout(self.lbl_name_layout, 1)
+        layout2.addLayout(self.lbl_curr_count_layout,1)
+        layout2.addLayout(self.lbl_est_count_layout,1)
         layout2.addLayout(feats, 2)
         # layout2.addWidget(self.nextButton)
         # }
@@ -219,12 +268,6 @@ class Window(QMainWindow):
         self.shortcut.activated.connect(self.clearTable)
         self.shortcut = QShortcut(QKeySequence("P"), self)
         self.shortcut.activated.connect(self.next)
-
-
-        # self.shortcut = QShortcut(QKeySequence(">"), self)
-        # self.shortcut.activated.connect(self.nextLabel)
-        # self.shortcut = QShortcut(QKeySequence("<"), self)
-        # self.shortcut.activated.connect(self.lastLabel)
 
         self.shortcut = QShortcut(QKeySequence(Qt.Key_Right), self)
         self.shortcut.activated.connect(self.forwardSlider)
@@ -328,10 +371,12 @@ class Window(QMainWindow):
                 font = QFont()
                 font.setBold(True)
                 self.tableWidget.item(self.rowNo, self.colNo).setFont(font)
+            self.curr_counts[index]+=1
             self.colNo += 1
             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(self.iLabel.itemText(index).split(' ', 1)[1]))
             self.colNo = 0
             self.rowNo += 1
+            self.updateCurrCounts()
             if (self.mediaPlayer.state() != QMediaPlayer.StoppedState):
                 self.playButton.click()
 
@@ -366,6 +411,9 @@ class Window(QMainWindow):
         self.rowNo = self.rowNo - len(index_list)
 
         for index in index_list:
+            row_lbl = int(self.tableWidget.item(index.row(), 2).text())
+            self.curr_counts[row_lbl-1] -=1
+            self.updateCurrCounts()
             self.tableWidget.removeRow(index.row())
 
     def clearTable(self):
@@ -374,6 +422,10 @@ class Window(QMainWindow):
         self.insertBaseRow()
         self.lastPause = QTime(0,0,0,0)
         self.setPosition(0)
+        self.curr_counts = [0] * 5
+        #self.est_counts = [(0,0)] * 5
+        self.updateCurrCounts()
+        #self.updateEstCounts()
         print("Clearing")
 
     def export(self):
@@ -427,6 +479,8 @@ class Window(QMainWindow):
                                 font = QFont()
                                 font.setBold(True)
                                 self.tableWidget.item(self.rowNo, self.colNo).setFont(font)
+                            self.curr_counts[int(li) - 1] +=1
+                            self.updateCurrCounts()
                             self.colNo += 1
                             self.tableWidget.setItem(self.rowNo, self.colNo, QTableWidgetItem(ln))
                             self.rowNo += 1
@@ -440,7 +494,7 @@ class Window(QMainWindow):
         self.tableWidget.setItem(0, 0, QTableWidgetItem("Start Time"))
         self.tableWidget.setItem(0, 1, QTableWidgetItem("End Time"))
         self.tableWidget.setItem(0, 2, QTableWidgetItem("Label Index"))
-        self.tableWidget.setItem(0, 3, QTableWidgetItem("Label Name"))
+        self.tableWidget.setItem(0, 3, QTableWidgetItem("Labeler Name"))
 
     def checkTableFrame(self, row, column):
         if ((row > 0) and (column < 2)):
@@ -483,7 +537,31 @@ class Window(QMainWindow):
         self.positionSlider.setRange(0, duration)
         mtime = QTime(0,0,0,0)
         mtime = mtime.addMSecs(self.mediaPlayer.duration())
+        start_time = QTime(0,0,0,0)
+        total_secs = start_time.addMSecs(self.mediaPlayer.duration())
+        self.total_secs = QTime(0, 0, 0).secsTo(total_secs)
+        self.setEstCounts()
+        self.updateEstCounts()
+        print(f"* Length: {self.total_secs}s")
         self.elbl.setText(mtime.toString())
+    
+    def setEstCounts(self):
+         for i in range(1,6):
+            range_start = int( self.total_secs * self.label_ratios[i-1][0])
+            range_end = int (self.total_secs * self.label_ratios[i-1][1])
+            self.est_counts[i-1] = (range_start, range_end)
+    
+    def updateEstCounts(self):
+        for i in range(len(self.est_counts)) :
+            est_lbl =   self.lbl_est_count_layout.itemAt(i+1).widget()
+            est_lbl.setText(str(self.est_counts[i][0]) + " - " + str(self.est_counts[i][1]))
+    
+    def updateCurrCounts(self):
+        for i in range(len(self.est_counts)) :
+            est_lbl =   self.lbl_curr_count_layout.itemAt(i+1).widget()
+            est_lbl.setText(str(self.curr_counts[i]))
+
+
 
     def setPosition(self, position):
         self.mediaPlayer.setPosition(position)
